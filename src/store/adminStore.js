@@ -1,3 +1,4 @@
+// PATH: frontend/src/store/adminStore.js
 import { create } from 'zustand';
 import client from '../api/client';
 
@@ -73,6 +74,23 @@ const useAdminStore = create((set) => ({
     } catch (err) {
       set({ error: err.response?.data?.error || 'Failed to update user.' });
       return false;
+    }
+  },
+
+  toggleActive: async (id, isActive) => {
+    // Optimistic update — flip immediately so the toggle feels instant,
+    // then revert if the server call fails.
+    set((state) => ({
+      users: state.users.map((u) => u.id === id ? { ...u, isActive } : u)
+    }));
+    try {
+      await client.patch(`/api/admin/users/${id}`, { isActive });
+    } catch (err) {
+      // Revert on failure
+      set((state) => ({
+        users: state.users.map((u) => u.id === id ? { ...u, isActive: !isActive } : u)
+      }));
+      set({ error: 'Failed to update user status.' });
     }
   },
 

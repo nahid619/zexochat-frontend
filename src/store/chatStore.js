@@ -1,3 +1,4 @@
+// PATH: frontend/src/store/chatStore.js
 import { create } from 'zustand';
 import client from '../api/client';
 import { ANONYMOUS_MODEL_ID, TOKEN_STORAGE_KEY } from '../constants';
@@ -371,7 +372,8 @@ const useChatStore = create((set, get) => ({
         });
       } catch (err) {
         console.error('Send message failed:', err);
-        const errMsg = err.response?.data?.error || 'Failed to send message. Please try again.';
+        const errData = err.response?.data;
+        const errMsg = errData?.suspended ? "Your access has been temporarily suspended. Please contact the admin." : errData?.error || "Failed to send message. Please try again.";
         set({ isLoading: false, error: errMsg });
         get().setToast({ text: errMsg, type: 'error' });
       }
@@ -427,7 +429,8 @@ const useChatStore = create((set, get) => ({
       await get().fetchConversations();
     } catch (err) {
       console.error('Send message failed:', err);
-      const errMsg = err.response?.data?.error || 'Failed to send message. Please try again.';
+      const errData = err.response?.data;
+        const errMsg = errData?.suspended ? "Your access has been temporarily suspended. Please contact the admin." : errData?.error || "Failed to send message. Please try again.";
       set({ isLoading: false, error: errMsg });
       get().setToast({ text: errMsg, type: 'error' });
     }

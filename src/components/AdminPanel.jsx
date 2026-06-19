@@ -292,7 +292,7 @@ function formatDate(d) {
 }
 
 function UsersTable() {
-  const { users, loading, regenerateCode, deleteUser } = useAdminStore();
+  const { users, loading, regenerateCode, deleteUser, toggleActive } = useAdminStore();
   const { user: currentUser } = useChatStore();
   const [viewingUser, setViewingUser] = useState(null);
 
@@ -314,6 +314,8 @@ function UsersTable() {
               <th>Name</th>
               <th>Username</th>
               <th>Access code</th>
+              <th>Uses</th>
+              <th>Active</th>
               <th>Role</th>
               <th>Created</th>
               <th>Actions</th>
@@ -328,6 +330,21 @@ function UsersTable() {
                   <td className="admin-mono">@{u.username}</td>
                   <td className="admin-mono admin-masked" title="Codes are stored as hashes only. Use ↻ to issue a new one.">
                     ••••••••••••
+                  </td>
+                  <td className="admin-uses">{u.messageCount || 0}</td>
+                  <td>
+                    <label
+                      className={`toggle-switch ${isSelf ? 'toggle-disabled' : ''}`}
+                      title={isSelf ? "Can't suspend your own account" : u.isActive ? 'Active — click to suspend' : 'Suspended — click to activate'}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={u.isActive !== false}
+                        disabled={isSelf}
+                        onChange={() => !isSelf && toggleActive(u.id, !u.isActive)}
+                      />
+                      <span className="toggle-thumb" />
+                    </label>
                   </td>
                   <td>{u.role === 'admin' ? <span className="role-badge">Admin</span> : 'User'}</td>
                   <td>{formatDate(u.createdAt)}</td>
