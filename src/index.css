@@ -1831,13 +1831,11 @@
    ═══════════════════════════════════════════════════ */
 
 .admin-login-page {
-  height: 100vh;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
   min-height: 100vh;
-  display: flex;
-  align-items: stretch;
-  justify-content: flex-start;
+  height: 100vh;
   background: var(--bg);
-  padding: 0;
   overflow: hidden;
 }
 
@@ -1926,11 +1924,8 @@
    ADMIN LOGIN — 50/50 SPLIT
    ═══════════════════════════════════════════════════ */
 
-/* Left: form panel */
+/* Left: form panel — fills its grid cell automatically */
 .admin-login-left {
-  flex: 0 0 50%;
-  width: 50%;
-  height: 100vh;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1974,11 +1969,8 @@
 }
 .admin-login-back:hover { color: var(--t1); }
 
-/* Right: branding panel */
+/* Right: branding panel — fills its grid cell automatically */
 .admin-login-right {
-  flex: 0 0 50%;
-  width: 50%;
-  height: 100vh;
   position: relative;
   overflow: hidden;
   display: flex;
@@ -2048,8 +2040,8 @@
 }
 
 @media (max-width: 700px) {
+  .admin-login-page { grid-template-columns: 1fr; }
   .admin-login-right { display: none; }
-  .admin-login-left  { width: 100%; border-right: none; }
 }
 
 /* ═══════════════════════════════════════════════════
@@ -2105,10 +2097,23 @@
   border: 1px solid var(--bd);
   border-radius: var(--rmd);
   box-shadow: var(--sh);
-  width: 100%; max-width: 620px;
-  max-height: 80vh;
+  width: min(900px, 92vw);
+  max-height: 82vh;
   display: flex; flex-direction: column;
   animation: cpIn 150ms ease;
+}
+
+/* Skeleton for the greeting name — prevents "Guest" flash on page load */
+.home-name-sk {
+  display: inline-block;
+  width: 120px;
+  height: 1em;
+  border-radius: 6px;
+  background: linear-gradient(90deg, var(--bge) 25%, var(--bgh) 50%, var(--bge) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.4s infinite;
+  vertical-align: middle;
+  margin: 0 4px;
 }
 
 .modal-hdr {
@@ -2384,4 +2389,35 @@
   color: var(--t2);
   text-align: right;
   padding-right: 16px !important;
+}
+
+/* PATH: frontend/src/index.css (appended — conv row delete + wider modal fixes) */
+
+.conv-row-wrap {
+  display: flex;
+  align-items: stretch;
+  border-bottom: 1px solid var(--bd);
+}
+.conv-row-wrap:last-child { border-bottom: none; }
+.conv-row-wrap .conv-row {
+  flex: 1;
+  border-bottom: none; /* handled by wrap */
+}
+
+.conv-row-del {
+  flex-shrink: 0;
+  width: 38px;
+  background: none;
+  border: none;
+  border-left: 1px solid var(--bd);
+  color: var(--t3);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color var(--tr), background var(--tr);
+}
+.conv-row-del:hover {
+  color: var(--er);
+  background: rgba(255,80,80,.06);
 }

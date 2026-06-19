@@ -1,3 +1,4 @@
+// PATH: frontend/src/components/ChatWindow.jsx
 import { useEffect, useRef, useState } from 'react';
 import useChatStore from '../store/chatStore';
 import MessageBubble from './MessageBubble';
@@ -48,10 +49,13 @@ function ChatWindow() {
     tokensToday,
     searchEnabled,
     toggleSearch,
-    user
+    user,
+    authReady
   } = useChatStore();
 
-  const displayName = user?.name || GUEST_NAME;
+  // While the session is restoring on page load, show nothing rather than
+  // "Guest" — prevents the flash of the wrong name before the real one loads.
+  const displayName = authReady ? (user?.name || GUEST_NAME) : null;
 
   const [input, setInput] = useState('');
   const textareaRef = useRef(null);
@@ -162,7 +166,11 @@ function ChatWindow() {
         <div key="home" className="home-screen">
           <div className="home-inner">
             <div className="home-greeting">
-              {getGreeting()} <span className="home-name">{displayName}</span>.
+              {getGreeting()}{' '}
+              {displayName
+                ? <span className="home-name">{displayName}</span>
+                : <span className="home-name-sk" />
+              }.
             </div>
             <div className="home-sub">What are you building today?</div>
 

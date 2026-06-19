@@ -94,7 +94,16 @@ const useAdminStore = create((set) => ({
     }
   },
 
-  dismissRevealedCode: () => set({ revealedCode: null })
+  dismissRevealedCode: () => set({ revealedCode: null }),
+
+  deleteConversation: async (convId) => {
+    try {
+      await client.delete(`/api/admin/conversations/${convId}`);
+      return true;
+    } catch {
+      return false;
+    }
+  }
 }));
 
 export default useAdminStore;

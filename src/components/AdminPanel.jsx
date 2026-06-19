@@ -5,7 +5,7 @@ import { Link } from 'react-router-dom';
 import {
   ArrowLeft, LogOut, UserPlus, RefreshCw, Trash2,
   Copy, Check, ShieldCheck, MessageSquare, ChevronRight,
-  ChevronDown, X
+  X, ExternalLink
 } from 'lucide-react';
 import useChatStore from '../store/chatStore';
 import useAdminStore from '../store/adminStore';
@@ -122,16 +122,19 @@ function CodeRevealBanner({ reveal, onDismiss }) {
 
 // ─── User chat history modal ──────────────────────────────────────────────────
 function UserChatsModal({ user: targetUser, onClose }) {
-  const [convs, setConvs]       = useState(null);
+  const [convs, setConvs]         = useState(null);
   const [activeConv, setActiveConv] = useState(null);
-  const [messages, setMessages] = useState(null);
+  const [messages, setMessages]   = useState(null);
   const [loadingMsgs, setLoadingMsgs] = useState(false);
+  const { deleteConversation }    = useAdminStore();
 
-  useEffect(() => {
+  const loadConvs = () => {
     client.get(`/api/admin/users/${targetUser.id}/conversations`)
       .then(r => setConvs(r.data))
       .catch(() => setConvs([]));
-  }, [targetUser.id]);
+  };
+
+  useEffect(() => { loadConvs(); }, [targetUser.id]);
 
   const openConv = async (conv) => {
     setActiveConv(conv);
@@ -145,6 +148,13 @@ function UserChatsModal({ user: targetUser, onClose }) {
     } finally {
       setLoadingMsgs(false);
     }
+  };
+
+  const handleDeleteConv = async (e, conv) => {
+    e.stopPropagation();
+    if (!confirm(`Delete "${conv.title || 'this conversation'}"? This cannot be undone.`)) return;
+    const ok = await deleteConversation(conv._id || conv.id);
+    if (ok) setConvs(prev => prev.filter(c => (c._id || c.id) !== (conv._id || conv.id)));
   };
 
   const formatDate = (d) => {
@@ -178,13 +188,22 @@ function UserChatsModal({ user: targetUser, onClose }) {
             ) : (
               <div className="conv-list">
                 {convs.map(c => (
-                  <button key={c._id || c.id} className="conv-row" onClick={() => openConv(c)}>
-                    <div className="conv-row-info">
-                      <span className="conv-row-title">{c.title || 'Untitled'}</span>
-                      <span className="conv-row-meta">{c.model} · {formatDate(c.updatedAt)}</span>
-                    </div>
-                    <ChevronRight size={14} className="conv-row-arrow" />
-                  </button>
+                  <div key={c._id || c.id} className="conv-row-wrap">
+                    <button className="conv-row" onClick={() => openConv(c)}>
+                      <div className="conv-row-info">
+                        <span className="conv-row-title">{c.title || 'Untitled'}</span>
+                        <span className="conv-row-meta">{c.model} · {formatDate(c.updatedAt)}</span>
+                      </div>
+                      <ChevronRight size={14} className="conv-row-arrow" />
+                    </button>
+                    <button
+                      className="conv-row-del"
+                      onClick={(e) => handleDeleteConv(e, c)}
+                      title="Delete this conversation"
+                    >
+                      <Trash2 size={13} />
+                    </button>
+                  </div>
                 ))}
               </div>
             )
@@ -390,6 +409,13 @@ function AdminDashboard() {
         <Link to="/" className="admin-back"><ArrowLeft size={15} /> Back to chat</Link>
         <div className="admin-hdr-title"><ShieldCheck size={15} /> Admin panel</div>
         <div className="admin-hdr-right">
+          <button
+            onClick={() => window.open('/', '_blank')}
+            className="ibtn"
+            title="Open main app in new tab"
+          >
+            <ExternalLink size={14} />
+          </button>
           <span className="admin-hdr-name">{user?.name}</span>
           <button onClick={logout} className="ibtn" title="Log out"><LogOut size={14} /></button>
         </div>
