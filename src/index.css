@@ -1917,3 +1917,403 @@
 }
 
 .admin-login-back:hover { color: var(--t1); }
+
+/* PATH: frontend/src/index.css (appended) */
+
+/* ═══════════════════════════════════════════════════
+   ADMIN LOGIN — 50/50 SPLIT
+   ═══════════════════════════════════════════════════ */
+
+.admin-login-page {
+  display: flex;
+  min-height: 100vh;
+  background: var(--bg);
+}
+
+/* Left: form panel */
+.admin-login-left {
+  width: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 32px;
+  background: var(--bgs);
+  border-right: 1px solid var(--bd);
+}
+
+.admin-login-card {
+  width: 100%;
+  max-width: 360px;
+  text-align: center;
+}
+
+.admin-login-icon { color: var(--ac); margin-bottom: 14px; }
+.admin-login-title { font-size: 22px; font-weight: 700; color: var(--t1); margin: 0 0 6px; }
+.admin-login-sub   { font-size: 12.5px; color: var(--t3); margin: 0 0 24px; }
+
+.admin-login-form { display: flex; flex-direction: column; gap: 10px; text-align: left; }
+.admin-login-form input {
+  width: 100%; padding: 10px 12px; background: var(--bgh);
+  border: 1px solid var(--bd); border-radius: var(--rsm);
+  font-family: inherit; font-size: 13px; color: var(--t1);
+  outline: none; box-sizing: border-box; transition: border-color var(--tr);
+}
+.admin-login-form input:focus { border-color: var(--ac); }
+.admin-login-form button {
+  padding: 10px 14px; background: var(--ac); color: var(--ac-text);
+  border: none; border-radius: var(--rsm); font-family: inherit;
+  font-size: 13px; font-weight: 700; cursor: pointer;
+  transition: background var(--tr); margin-top: 2px;
+}
+.admin-login-form button:hover:not(:disabled) { background: var(--ach); }
+.admin-login-form button:disabled { opacity: .5; cursor: not-allowed; }
+.admin-login-back {
+  display: inline-block; margin-top: 20px;
+  font-size: 12px; color: var(--t3); text-decoration: none;
+  transition: color var(--tr);
+}
+.admin-login-back:hover { color: var(--t1); }
+
+/* Right: branding panel */
+.admin-login-right {
+  width: 50%;
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg);
+}
+
+/* Animated orbs */
+@keyframes orbDrift {
+  0%,100% { transform: translate(0,0) scale(1); }
+  33%      { transform: translate(40px,-40px) scale(1.08); }
+  66%      { transform: translate(-30px,25px) scale(0.94); }
+}
+
+.admin-brand-orb {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(72px);
+  pointer-events: none;
+  animation: orbDrift infinite ease-in-out;
+}
+.orb-1 { width: 340px; height: 340px; background: var(--ac); opacity: .13; top: 5%; left: 10%; animation-duration: 9s; }
+.orb-2 { width: 220px; height: 220px; background: var(--ach); opacity: .10; bottom: 15%; right: 5%; animation-duration: 13s; animation-delay: -5s; }
+.orb-3 { width: 160px; height: 160px; background: var(--ac); opacity: .08; top: 55%; left: 45%; animation-duration: 11s; animation-delay: -3s; }
+
+.admin-brand-content {
+  position: relative;
+  z-index: 1;
+  text-align: center;
+  padding: 32px;
+}
+
+.admin-brand-logo {
+  width: 72px; height: 72px;
+  border-radius: 20px;
+  background: var(--acm);
+  border: 2px solid var(--acb);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 36px; font-weight: 900; color: var(--ac);
+  margin: 0 auto 20px;
+  font-family: 'JetBrains Mono', monospace;
+}
+
+.admin-brand-name {
+  font-size: 36px; font-weight: 800;
+  color: var(--t1); margin: 0 0 8px;
+  letter-spacing: -.5px;
+}
+
+.admin-brand-tag {
+  font-size: 13px; color: var(--t3);
+  margin: 0 0 28px; line-height: 1.5;
+}
+
+.admin-brand-pills {
+  display: flex; flex-direction: column;
+  gap: 10px; align-items: center;
+}
+
+.admin-brand-pills span {
+  font-size: 12.5px; color: var(--t2);
+  background: var(--bge);
+  border: 1px solid var(--bd);
+  border-radius: 20px;
+  padding: 5px 14px;
+}
+
+@media (max-width: 700px) {
+  .admin-login-right { display: none; }
+  .admin-login-left  { width: 100%; border-right: none; }
+}
+
+/* ═══════════════════════════════════════════════════
+   ADMIN PANEL — WIDER + LOADING
+   ═══════════════════════════════════════════════════ */
+
+.admin-loading-page {
+  min-height: 100vh;
+  display: flex; align-items: center; justify-content: center;
+  background: var(--bg);
+}
+
+@keyframes spin { to { transform: rotate(360deg); } }
+.admin-loading-spinner {
+  width: 28px; height: 28px;
+  border: 3px solid var(--bd);
+  border-top-color: var(--ac);
+  border-radius: 50%;
+  animation: spin .7s linear infinite;
+}
+
+/* Make the admin main area full-width */
+.admin-main {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 28px 28px 80px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+/* Full-width card variant for the users table */
+.admin-card-full { width: 100%; }
+
+/* ═══════════════════════════════════════════════════
+   USER CHAT HISTORY MODAL
+   ═══════════════════════════════════════════════════ */
+
+.modal-backdrop {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,.55);
+  backdrop-filter: blur(3px);
+  z-index: 1000;
+  display: flex; align-items: center; justify-content: center;
+  padding: 20px;
+  animation: fadeIn 140ms ease;
+}
+
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+.modal-box {
+  background: var(--bgs);
+  border: 1px solid var(--bd);
+  border-radius: var(--rmd);
+  box-shadow: var(--sh);
+  width: 100%; max-width: 620px;
+  max-height: 80vh;
+  display: flex; flex-direction: column;
+  animation: cpIn 150ms ease;
+}
+
+.modal-hdr {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--bd);
+  flex-shrink: 0;
+}
+
+.modal-title {
+  display: flex; align-items: center; gap: 7px;
+  font-size: 13.5px; font-weight: 700; color: var(--t1);
+}
+
+.modal-back {
+  display: flex; align-items: center; gap: 5px;
+  background: none; border: none; font-family: inherit;
+  font-size: 12.5px; font-weight: 600; color: var(--t2);
+  cursor: pointer; padding: 0; transition: color var(--tr);
+}
+.modal-back:hover { color: var(--t1); }
+
+.modal-close {
+  background: none; border: none; color: var(--t3);
+  cursor: pointer; padding: 2px; display: flex;
+  transition: color var(--tr);
+}
+.modal-close:hover { color: var(--t1); }
+
+.modal-body { overflow-y: auto; flex: 1; }
+
+.modal-empty {
+  padding: 32px 20px;
+  text-align: center;
+  font-size: 12.5px; color: var(--t3);
+}
+
+/* Conversation list inside modal */
+.conv-list { display: flex; flex-direction: column; }
+
+.conv-row {
+  display: flex; align-items: center; justify-content: space-between;
+  width: 100%; padding: 13px 18px;
+  background: none; border: none; border-bottom: 1px solid var(--bd);
+  font-family: inherit; cursor: pointer; text-align: left;
+  transition: background var(--tr);
+}
+.conv-row:hover { background: var(--bgh); }
+.conv-row:last-child { border-bottom: none; }
+
+.conv-row-info { display: flex; flex-direction: column; gap: 3px; }
+.conv-row-title { font-size: 13px; font-weight: 600; color: var(--t1); }
+.conv-row-meta  { font-size: 11px; color: var(--t3); }
+.conv-row-arrow { color: var(--t3); flex-shrink: 0; }
+
+/* Messages inside modal */
+.msg-list { padding: 16px 18px; display: flex; flex-direction: column; gap: 14px; }
+
+.msg-list-title {
+  font-size: 12px; font-weight: 700; color: var(--t3);
+  text-transform: uppercase; letter-spacing: .06em;
+  padding-bottom: 8px; border-bottom: 1px solid var(--bd);
+  margin-bottom: 4px;
+}
+
+.admin-msg { display: flex; flex-direction: column; gap: 4px; }
+
+.admin-msg-role {
+  font-size: 10.5px; font-weight: 700;
+  letter-spacing: .05em; text-transform: uppercase;
+  color: var(--t3);
+}
+.admin-msg.user .admin-msg-role { color: var(--ac); }
+
+.admin-msg-content {
+  font-size: 13px; line-height: 1.55; color: var(--t1);
+  background: var(--bge); border-radius: var(--rsm);
+  padding: 10px 13px; margin: 0;
+  white-space: pre-wrap; word-break: break-word;
+}
+.admin-msg.user .admin-msg-content { background: var(--acm); }
+
+.admin-msg-model {
+  font-size: 10px; color: var(--t3);
+  font-family: 'JetBrains Mono', monospace;
+}
+
+/* PATH: frontend/src/index.css (appended — transitions + skeleton + inline edit) */
+
+/* ═══════════════════════════════════════════════════
+   SMOOTH TRANSITIONS — view switching, messages
+   ═══════════════════════════════════════════════════ */
+
+/* Home screen and chat content both fade+slide in when they mount.
+   The key prop on each in ChatWindow.jsx forces a remount on switch,
+   which restarts the animation — same effect as a route transition. */
+@keyframes viewIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0);    }
+}
+
+.home-screen  { animation: viewIn 220ms ease; }
+.chat-content { animation: viewIn 200ms ease; }
+
+/* Each message fades in from below as it arrives */
+@keyframes msgIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0);   }
+}
+
+.msg { animation: msgIn 180ms ease; }
+
+/* Sidebar conversation items — smooth selection highlight */
+.ci {
+  transition: background var(--tr), border-color var(--tr);
+}
+
+/* Loading dots pulse already exists but make it smoother */
+.loading-dots span {
+  transition: opacity 200ms ease;
+}
+
+/* Appearance panel slide-in */
+.color-panel {
+  animation: cpIn 160ms cubic-bezier(.22,.68,0,1.2);
+}
+
+/* Login panel same */
+.login-panel {
+  animation: cpIn 160ms cubic-bezier(.22,.68,0,1.2);
+}
+
+/* Modal backdrop and box already have animations, ensure they feel snappy */
+.modal-box {
+  animation: viewIn 180ms cubic-bezier(.22,.68,0,1.1);
+}
+
+/* ═══════════════════════════════════════════════════
+   SIDEBAR SKELETON — prevents "Guest" flash on refresh
+   ═══════════════════════════════════════════════════ */
+
+@keyframes shimmer {
+  0%   { background-position: -200% 0; }
+  100% { background-position:  200% 0; }
+}
+
+.s-foot-skeleton {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 2px 0;
+  width: 100%;
+}
+
+.sk-av {
+  width: 30px; height: 30px;
+  border-radius: 50%;
+  background: linear-gradient(90deg, var(--bge) 25%, var(--bgh) 50%, var(--bge) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.4s infinite;
+  flex-shrink: 0;
+}
+
+.sk-lines {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.sk-line {
+  height: 9px;
+  border-radius: 4px;
+  background: linear-gradient(90deg, var(--bge) 25%, var(--bgh) 50%, var(--bge) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.4s infinite;
+}
+
+.sk-short { width: 60%; animation-delay: .1s; }
+
+/* Fade in once authReady and real content replaces skeleton */
+.s-foot > * { animation: fadeIn 200ms ease; }
+
+/* ═══════════════════════════════════════════════════
+   ADMIN — inline name edit + editable cell
+   ═══════════════════════════════════════════════════ */
+
+.admin-editable {
+  cursor: pointer;
+  border-bottom: 1px dashed transparent;
+  transition: border-color var(--tr), color var(--tr);
+  padding-bottom: 1px;
+}
+
+.admin-editable:hover {
+  border-bottom-color: var(--ac);
+  color: var(--ac);
+}
+
+.admin-inline-input {
+  background: var(--bgh);
+  border: 1px solid var(--ac);
+  border-radius: 4px;
+  color: var(--t1);
+  font-family: inherit;
+  font-size: 12.5px;
+  padding: 3px 7px;
+  outline: none;
+  width: 120px;
+}

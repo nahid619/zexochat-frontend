@@ -42,7 +42,8 @@ function Sidebar() {
     convSearchQuery,
     setConvSearchQuery,
     user,
-    logout
+    logout,
+    authReady
   } = useChatStore();
   const navigate = useNavigate();
   const [loginOpen, setLoginOpen] = useState(false);
@@ -138,46 +139,58 @@ function Sidebar() {
 
       {/* Sidebar footer — profile area */}
       <div className="s-foot">
-        <div className="av">{(user?.name || GUEST_NAME).charAt(0).toUpperCase()}</div>
-        <div className="fi">
-          <div className="sfn">
-            {user?.name || GUEST_NAME}
-            {user?.role === 'admin' && <span className="role-badge">Admin</span>}
+        {!authReady ? (
+          /* Skeleton shown while session restores — prevents "Guest" flash */
+          <div className="s-foot-skeleton">
+            <div className="sk-av" />
+            <div className="sk-lines">
+              <div className="sk-line" />
+              <div className="sk-line sk-short" />
+            </div>
           </div>
-          <div className="fs">
-            {user ? `${conversations.length} chats` : 'Guest · 1 model · not saved'}
-          </div>
-        </div>
-        <div className="s-foot-actions">
-          {user?.role === 'admin' && (
-            <button onClick={() => navigate('/admin')} className="ibtn" title="Admin panel">
-              <ShieldCheck size={14} />
-            </button>
-          )}
-          <button
-            onClick={() => { setLoginOpen(false); toggleAppearance(); }}
-            className="ibtn"
-            title="Appearance"
-            id="settingsBtn"
-          >
-            <Settings size={14} />
-          </button>
-          {user ? (
-            <button onClick={logout} className="ibtn" title="Log out">
-              <LogOut size={14} />
-            </button>
-          ) : (
-            <button
-              onClick={() => { if (appearanceOpen) toggleAppearance(); setLoginOpen((v) => !v); }}
-              className="ibtn"
-              title="Enter access code"
-            >
-              <KeyRound size={14} />
-            </button>
-          )}
-        </div>
-
-        {!user && loginOpen && <LoginPanel onClose={() => setLoginOpen(false)} />}
+        ) : (
+          <>
+            <div className="av">{(user?.name || GUEST_NAME).charAt(0).toUpperCase()}</div>
+            <div className="fi">
+              <div className="sfn">
+                {user?.name || GUEST_NAME}
+                {user?.role === 'admin' && <span className="role-badge">Admin</span>}
+              </div>
+              <div className="fs">
+                {user ? `${conversations.length} chats` : 'Guest · 1 model · not saved'}
+              </div>
+            </div>
+            <div className="s-foot-actions">
+              {user?.role === 'admin' && (
+                <button onClick={() => navigate('/admin')} className="ibtn" title="Admin panel">
+                  <ShieldCheck size={14} />
+                </button>
+              )}
+              <button
+                onClick={() => { setLoginOpen(false); toggleAppearance(); }}
+                className="ibtn"
+                title="Appearance"
+                id="settingsBtn"
+              >
+                <Settings size={14} />
+              </button>
+              {user ? (
+                <button onClick={logout} className="ibtn" title="Log out">
+                  <LogOut size={14} />
+                </button>
+              ) : (
+                <button
+                  onClick={() => { if (appearanceOpen) toggleAppearance(); setLoginOpen((v) => !v); }}
+                  className="ibtn"
+                  title="Enter access code"
+                >
+                  <KeyRound size={14} />
+                </button>
+              )}
+            </div>
+            {!user && loginOpen && <LoginPanel onClose={() => setLoginOpen(false)} />}
+          </>
+        )}
       </div>
     </aside>
   );

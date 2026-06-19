@@ -159,7 +159,7 @@ function ChatWindow() {
 
       {isHome ? (
         /* HOME / WELCOME SCREEN */
-        <div className="home-screen">
+        <div key="home" className="home-screen">
           <div className="home-inner">
             <div className="home-greeting">
               {getGreeting()} <span className="home-name">{displayName}</span>.
@@ -218,7 +218,7 @@ function ChatWindow() {
         </div>
       ) : (
         /* CHAT CONTENT */
-        <div className="chat-content">
+        <div key={activeConversationId} className="chat-content">
           <div className="msgs">
             <div className="mwrap">
               {messages.map((msg) => (

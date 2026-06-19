@@ -63,6 +63,19 @@ const useAdminStore = create((set) => ({
     }
   },
 
+  updateUser: async (id, name) => {
+    try {
+      const res = await client.patch(`/api/admin/users/${id}`, { name });
+      set((state) => ({
+        users: state.users.map((u) => u.id === id ? { ...u, name: res.data.user.name } : u)
+      }));
+      return true;
+    } catch (err) {
+      set({ error: err.response?.data?.error || 'Failed to update user.' });
+      return false;
+    }
+  },
+
   dismissRevealedCode: () => set({ revealedCode: null })
 }));
 
