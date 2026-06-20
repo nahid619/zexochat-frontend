@@ -1,0 +1,14 @@
+/* ═══════════════════════════════════════════════════════════════
+   ZexoChat — Main stylesheet entry point
+   All styles are split into focused files under src/styles/.
+   Import order matters: tokens → base → features → admin.
+   ═══════════════════════════════════════════════════════════════ */
+
+@import './tokens.css';      /* CSS custom properties, theme variants    */
+@import './base.css';        /* Reset, body, keyframe animations          */
+@import './sidebar.css';     /* Sidebar, color panel, footer, skeleton    */
+@import './chat.css';        /* Main area, messages, input, home screen   */
+@import './components.css';  /* Toast, modals, toggles, loading, panels   */
+@import './auth.css';        /* Login popover, role badge, access tiers   */
+@import './admin.css';       /* Admin dashboard, users table, chat history */
+@import './responsive.css';  /* Global layout breakpoints                 */

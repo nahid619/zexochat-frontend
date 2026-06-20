@@ -1,0 +1,26 @@
+/* ═══════════════════════════════════════════════════
+   RESPONSIVE
+   ═══════════════════════════════════════════════════ */
+
+@media (max-width: 720px) {
+  :root { --sw: 220px; }
+  .home-greeting { font-size: 22px; }
+  .qa-chips { gap: 6px; }
+  .qa-chip { font-size: 11.5px; padding: 6px 10px; }
+  .home-stats { gap: 12px; }
+  .home-stat-val { font-size: 15px; }
+  .mp-btn { font-size: 11px; padding: 4px 7px; }
+  .hdr { padding: 0 10px; gap: 6px; }
+  .st-btn { padding: 4px 7px; font-size: 11px; }
+}
+
+@media (max-width: 520px) {
+  :root { --sw: 0px; }
+  .sidebar { display: none; }
+  .home-inner { max-width: 100%; }
+  .hdr { padding: 0 8px; gap: 4px; }
+  .mp-drop { width: calc(100vw - 24px); left: 0; right: auto; }
+  .main.home-mode .mp-drop { left: 0; right: auto; }
+  .hdr-chat-right .st-btn { font-size: 0; gap: 0; padding: 5px 7px; }
+  .hdr-chat-right .st-btn .st-d { font-size: 0; }
+}

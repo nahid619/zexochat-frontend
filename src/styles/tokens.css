@@ -1,0 +1,66 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ═══════════════════════════════════════════════════
+   ZEXOCHAT DESIGN SYSTEM — CSS Custom Properties
+   ═══════════════════════════════════════════════════ */
+
+:root {
+  --sw: 258px;
+  --maxw: 780px;
+  --rsm: 6px;
+  --rmd: 10px;
+  --rlg: 14px;
+  --rxl: 20px;
+  --tr: 160ms cubic-bezier(.4, 0, .2, 1);
+}
+
+/* ── DEEP OCEANIC DARK ── */
+[data-theme="dark"] {
+  --bg: #07111C;
+  --bgs: #0B1A28;
+  --bge: #0F2234;
+  --bgh: #152E46;
+  --bd: #1D3C58;
+  --t1: #CBE2F2;
+  --t2: #527F9C;
+  --t3: #2A506A;
+  --ac: #00C9A7;
+  --ach: #1DDBB9;
+  --ac-text: #07111C;
+  --acm: rgba(0, 201, 167, .11);
+  --acb: rgba(0, 201, 167, .24);
+  --ub: #0C2236;
+  --cb: #040D17;
+  --ok: #4DB87A;
+  --wa: #F5A623;
+  --er: #EF5350;
+  --sh: 0 20px 56px rgba(0, 0, 0, .6);
+  --sh2: 0 4px 16px rgba(0, 0, 0, .4);
+}
+
+/* ── LIGHT MODE ── */
+[data-theme="light"] {
+  --bg: #F7F8FA;
+  --bgs: #FFFFFF;
+  --bge: #FFFFFF;
+  --bgh: #EFEFEF;
+  --bd: #E0E0E0;
+  --t1: #111111;
+  --t2: #484848;
+  --t3: #9A9A9A;
+  --ac: #00897B;
+  --ach: #00796B;
+  --ac-text: #FFFFFF;
+  --acm: rgba(0, 137, 123, .09);
+  --acb: rgba(0, 137, 123, .20);
+  --ub: #EDF7F5;
+  --cb: #F2F2F2;
+  --ok: #2E7D32;
+  --wa: #E65100;
+  --er: #C62828;
+  --sh: 0 8px 24px rgba(0, 0, 0, .08);
+  --sh2: 0 2px 8px rgba(0, 0, 0, .05);
+}
+

@@ -1,0 +1,104 @@
+/* ═══════════════════════════════════════════════════
+   ACCESS TIERS — login popover, role badge, locked model
+   ═══════════════════════════════════════════════════ */
+
+.role-badge {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+  color: var(--ac);
+  background: var(--acm);
+  border: 1px solid var(--acb);
+  border-radius: 4px;
+  padding: 1px 5px;
+  margin-left: 6px;
+  vertical-align: 1px;
+}
+
+.mp-btn.locked {
+  opacity: .55;
+  cursor: not-allowed;
+}
+
+.mp-btn.locked:hover {
+  border-color: var(--bd);
+  background: var(--bge);
+}
+
+/* Login popover — anchored the same way as .color-panel (relative to the
+   sidebar's bottom edge), so the two never fight over layout rules even
+   though only one is ever open at a time. */
+.login-panel {
+  position: absolute;
+  bottom: 62px;
+  left: 8px;
+  right: 8px;
+  background: var(--bge);
+  border: 1px solid var(--bd);
+  border-radius: var(--rmd);
+  box-shadow: var(--sh);
+  padding: 14px;
+  z-index: 600;
+  animation: cpIn 140ms ease;
+}
+
+.login-form {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.login-form input {
+  width: 100%;
+  padding: 8px 10px;
+  background: var(--bgh);
+  border: 1px solid var(--bd);
+  border-radius: var(--rsm);
+  font-family: inherit;
+  font-size: 12.5px;
+  color: var(--t1);
+  outline: none;
+  transition: border-color var(--tr);
+}
+
+.login-form input:focus {
+  border-color: var(--ac);
+}
+
+.login-form button {
+  padding: 8px 12px;
+  background: var(--ac);
+  color: var(--ac-text);
+  border: none;
+  border-radius: var(--rsm);
+  font-family: inherit;
+  font-size: 12.5px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background var(--tr);
+}
+
+.login-form button:hover:not(:disabled) {
+  background: var(--ach);
+}
+
+.login-form button:disabled {
+  opacity: .5;
+  cursor: not-allowed;
+}
+
+.login-error {
+  margin-top: 8px;
+  font-size: 11.5px;
+  color: var(--er);
+}
+
+.login-hint {
+  margin-top: 10px;
+  font-size: 10.5px;
+  line-height: 1.5;
+  color: var(--t3);
+}
+
