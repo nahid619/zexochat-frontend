@@ -6,6 +6,26 @@ import AppearancePanel from './AppearancePanel';
 import LoginPanel from './LoginPanel';
 import { GUEST_NAME } from '../constants';
 
+// ─── ZexoChat SVG Logo ────────────────────────────────────────────────────────
+function ZexoLogo({ size = 22 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+      {/* Chat bubble body */}
+      <path
+        d="M4 5C4 3.34 5.34 2 7 2H17C18.66 2 20 3.34 20 5V15C20 16.66 18.66 18 17 18H13.5L11 21.5L8.5 18H7C5.34 18 4 16.66 4 15V5Z"
+        fill="var(--ac)" fillOpacity="0.15"
+        stroke="var(--ac)" strokeWidth="1.5"
+      />
+      {/* Z monogram inside */}
+      <path
+        d="M8.5 8H15L8.5 14H15.5"
+        stroke="var(--ac)" strokeWidth="1.9"
+        strokeLinecap="round" strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
 function groupByDate(conversations) {
   const now = new Date();
   const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
@@ -66,7 +86,7 @@ function Sidebar() {
       {/* Brand Header */}
       <div className="s-top">
         <div className="logo">
-          <div className="logo-mark">N</div>
+          <ZexoLogo size={22} />
           ZexoChat
         </div>
         <button onClick={toggleSidebar} className="ibtn" title="Close sidebar">
@@ -140,7 +160,6 @@ function Sidebar() {
       {/* Sidebar footer — profile area */}
       <div className="s-foot">
         {!authReady ? (
-          /* Skeleton shown while session restores — prevents "Guest" flash */
           <div className="s-foot-skeleton">
             <div className="sk-av" />
             <div className="sk-lines">
