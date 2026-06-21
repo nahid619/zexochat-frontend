@@ -3,82 +3,137 @@ import { create } from 'zustand';
 import client from '../api/client';
 import { ANONYMOUS_MODEL_ID, TOKEN_STORAGE_KEY } from '../constants';
 
-// Default background palettes, mirroring the design mockup's "Background" swatches.
-const DARK_BG_DEFAULT = { bg: '#07111C', bgs: '#0B1A28', bge: '#0F2234', bgh: '#152E46', bd: '#1D3C58' };
+const DARK_BG_DEFAULT  = { bg: '#07111C', bgs: '#0B1A28', bge: '#0F2234', bgh: '#152E46', bd: '#1D3C58' };
 const LIGHT_BG_DEFAULT = { bg: '#F7F8FA', bgs: '#FFFFFF', bge: '#FFFFFF', bgh: '#EFEFEF', bd: '#E0E0E0' };
 
-// Default model offered to identified (logged-in) users for a fresh chat —
-// distinct from ANONYMOUS_MODEL_ID, which is the one-and-only model
-// anonymous callers are locked to.
 const DEFAULT_IDENTIFIED_MODEL = 'gemini-3-flash-preview';
+
+// ─── DOM helpers (module-level, no Zustand dependency) ───────────────────────
 
 function applyBgVars(vars) {
   const root = document.documentElement;
-  root.style.setProperty('--bg', vars.bg);
+  root.style.setProperty('--bg',  vars.bg);
   root.style.setProperty('--bgs', vars.bgs);
   root.style.setProperty('--bge', vars.bge);
   root.style.setProperty('--bgh', vars.bgh);
-  root.style.setProperty('--bd', vars.bd);
+  root.style.setProperty('--bd',  vars.bd);
 }
 
+// Reads the current --bg* values back from the live DOM so we always
+// persist what's actually rendered, not a stale snapshot from state.
+function readBgVars() {
+  const s = document.documentElement.style;
+  return {
+    bg:  s.getPropertyValue('--bg')  || DARK_BG_DEFAULT.bg,
+    bgs: s.getPropertyValue('--bgs') || DARK_BG_DEFAULT.bgs,
+    bge: s.getPropertyValue('--bge') || DARK_BG_DEFAULT.bge,
+    bgh: s.getPropertyValue('--bgh') || DARK_BG_DEFAULT.bgh,
+    bd:  s.getPropertyValue('--bd')  || DARK_BG_DEFAULT.bd,
+  };
+}
+
+// Applies a full saved appearance object to the DOM without touching
+// Zustand state — used during session restore so state + DOM stay in sync.
+function applyAppearanceToDom(appearance) {
+  if (!appearance) return;
+  const { theme, bgVars, accentColor } = appearance;
+
+  if (theme) {
+    document.documentElement.setAttribute('data-theme', theme);
+  }
+  if (bgVars) {
+    applyBgVars(bgVars);
+  }
+  if (accentColor) {
+    const { ac, ach, r, g, b } = accentColor;
+    const root = document.documentElement;
+    const lin  = (c) => { c /= 255; return c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4; };
+    const L    = 0.2126 * lin(r) + 0.7152 * lin(g) + 0.0722 * lin(b);
+    root.style.setProperty('--ac',      ac);
+    root.style.setProperty('--ach',     ach);
+    root.style.setProperty('--ac-text', L > 0.28 ? '#0A1420' : '#FFFFFF');
+    root.style.setProperty('--acm',     `rgba(${r},${g},${b},.11)`);
+    root.style.setProperty('--acb',     `rgba(${r},${g},${b},.24)`);
+  }
+}
+
+// ─── Debounced appearance save ────────────────────────────────────────────────
+let _appearanceSaveTimer = null;
+
+// ─── Store ────────────────────────────────────────────────────────────────────
 const useChatStore = create((set, get) => ({
-  // --- Auth / identity. `user` is null for anonymous callers — see the
-  // access plan: anonymous gets exactly one model and no saved history,
-  // identified users (access code) get everything.
-  user: null,
-  authReady: false, // becomes true once restoreSession() has resolved on boot
+  // --- Auth / identity
+  user:      null,
+  authReady: false,
   authError: null,
 
   // --- Core chat state
-  conversations: [],
+  conversations:       [],
   activeConversationId: null,
-  messages: [],
-  selectedModel: ANONYMOUS_MODEL_ID,
-  isLoading: false,
-  searchEnabled: true,
-  error: null,
-  toast: null,
+  messages:            [],
+  selectedModel:       ANONYMOUS_MODEL_ID,
+  isLoading:           false,
+  searchEnabled:       true,
+  error:               null,
+  toast:               null,
 
-  // --- View: 'home' (welcome screen) | 'chat' (an open conversation)
+  // --- View
   view: 'home',
 
-  // --- Models (fetched from /api/models, used by ModelPicker + home stats)
-  models: [],
+  // --- Models
+  models:       [],
   modelsLoaded: false,
 
-  // --- Lightweight client-side estimate of tokens used this session.
-  // The backend doesn't track token usage, so this is a rough character/4
-  // approximation rather than real provider-reported usage.
+  // --- Token estimate
   tokensToday: 0,
 
-  // --- Sidebar conversation search
+  // --- Sidebar search
   convSearchQuery: '',
 
-  // --- UI state
-  sidebarOpen: true,
-  theme: 'dark',
+  // --- UI / appearance state
+  sidebarOpen:   true,
+  theme:         'dark',
   appearanceOpen: false,
-  bgPaletteId: 'bgOceanic',
+  bgPaletteId:   'bgOceanic',
   accentColor: {
-    ac: '#00C9A7',
-    ach: '#1DDBB9',
-    r: 0,
-    g: 201,
-    b: 167,
+    ac: '#00C9A7', ach: '#1DDBB9',
+    r: 0, g: 201, b: 167,
     acText: '#07111C'
   },
 
   // --- UI actions
   toggleSidebar: () => set(state => ({ sidebarOpen: !state.sidebarOpen })),
 
+  // ── Appearance ──────────────────────────────────────────────────────────────
+
+  // Persists the current appearance to the server (debounced, 800 ms).
+  // No-op for guests — they have no user record to write to.
+  saveAppearance: () => {
+    if (!get().user) return;
+    clearTimeout(_appearanceSaveTimer);
+    _appearanceSaveTimer = setTimeout(async () => {
+      const { theme, bgPaletteId, accentColor } = get();
+      const appearance = {
+        theme,
+        bgPaletteId,
+        bgVars:      readBgVars(),   // live values from DOM
+        accentColor,
+      };
+      try {
+        await client.patch('/api/auth/appearance', { appearance });
+      } catch (err) {
+        // Silent — a missed appearance save should never interrupt the user.
+        console.warn('[appearance] Save failed:', err.message);
+      }
+    }, 800);
+  },
+
   setTheme: (mode) => {
     document.documentElement.setAttribute('data-theme', mode);
-    // Reset background palette to the new theme's default, same as the mockup's
-    // resetBgForTheme() — keeps an accidental "light text on light bg" combo
-    // from persisting after a theme switch.
     const defaults = mode === 'dark' ? DARK_BG_DEFAULT : LIGHT_BG_DEFAULT;
     applyBgVars(defaults);
     set({ theme: mode, bgPaletteId: mode === 'dark' ? 'bgOceanic' : 'bgClean' });
+    get().saveAppearance();
   },
 
   cycleTheme: () => {
@@ -94,29 +149,26 @@ const useChatStore = create((set, get) => ({
     } else {
       set({ bgPaletteId: paletteId });
     }
+    get().saveAppearance();
   },
 
   toggleAppearance: () => set(state => ({ appearanceOpen: !state.appearanceOpen })),
 
-  // Returns dark or white text depending on accent luminance, so a picked
-  // color always stays readable on buttons/avatars that use --ac-text
-  // (e.g. a medium blue needs white text, not dark).
   setAccentColor: (ac, ach, r, g, b) => {
     const root = document.documentElement;
-    const lin = (c) => { c /= 255; return c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4); };
-    const L = 0.2126 * lin(r) + 0.7152 * lin(g) + 0.0722 * lin(b);
+    const lin  = (c) => { c /= 255; return c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4); };
+    const L    = 0.2126 * lin(r) + 0.7152 * lin(g) + 0.0722 * lin(b);
     const acText = L > 0.28 ? '#0A1420' : '#FFFFFF';
 
-    root.style.setProperty('--ac', ac);
-    root.style.setProperty('--ach', ach);
+    root.style.setProperty('--ac',      ac);
+    root.style.setProperty('--ach',     ach);
     root.style.setProperty('--ac-text', acText);
-    root.style.setProperty('--acm', `rgba(${r},${g},${b},.11)`);
-    root.style.setProperty('--acb', `rgba(${r},${g},${b},.24)`);
+    root.style.setProperty('--acm',     `rgba(${r},${g},${b},.11)`);
+    root.style.setProperty('--acb',     `rgba(${r},${g},${b},.24)`);
     set({ accentColor: { ac, ach, r, g, b, acText } });
+    get().saveAppearance();
   },
 
-  // For the custom color-picker swatch: derive a lighter "hover" shade from
-  // the picked hex, then reuse the same logic as the preset swatches.
   setCustomAccentColor: (hex) => {
     const r = parseInt(hex.slice(1, 3), 16);
     const g = parseInt(hex.slice(3, 5), 16);
@@ -126,19 +178,17 @@ const useChatStore = create((set, get) => ({
     get().setAccentColor(hex, ach, r, g, b);
   },
 
-  // --- Toast
+  // ── Toast ───────────────────────────────────────────────────────────────────
   setToast: (toast) => {
     set({ toast });
     setTimeout(() => {
       const current = get().toast;
-      if (current && current.text === toast.text) {
-        set({ toast: null });
-      }
+      if (current && current.text === toast.text) set({ toast: null });
     }, 4000);
   },
   clearToast: () => set({ toast: null }),
 
-  // --- Model
+  // ── Model ───────────────────────────────────────────────────────────────────
   setSelectedModel: (selectedModel) => set({ selectedModel }),
 
   fetchModels: async () => {
@@ -154,27 +204,19 @@ const useChatStore = create((set, get) => ({
     }
   },
 
-  // --- Search
+  // ── Search ──────────────────────────────────────────────────────────────────
   toggleSearch: () => set(state => ({ searchEnabled: !state.searchEnabled })),
 
-  // --- Sidebar search
+  // ── Sidebar search ──────────────────────────────────────────────────────────
   setConvSearchQuery: (convSearchQuery) => set({ convSearchQuery }),
 
-  // --- Navigation
-  // Returns to the welcome/home screen without creating a conversation yet —
-  // a real conversation row is only persisted once the user actually sends
-  // a message (see sendMessage below). Mirrors the mockup's showHome(). This
-  // is also how an in-progress anonymous chat gets discarded, matching the
-  // access plan ("refreshing the page clears the conversation") — "New
-  // Chat" has the same effect even without a refresh.
+  // ── Navigation ──────────────────────────────────────────────────────────────
   goHome: () => set({ activeConversationId: null, messages: [], view: 'home' }),
 
-  // --- Auth actions
-  // Checks for a previously-saved session token on boot and verifies it's
-  // still valid (it may have been revoked since — logout elsewhere, an
-  // admin regenerating the code, or the account being deleted). Always
-  // resolves (never throws) so App.jsx can safely await it before loading
-  // anything that depends on who's logged in.
+  // ── Auth ────────────────────────────────────────────────────────────────────
+
+  // Validates a stored token on boot and restores appearance.
+  // Always resolves so App.jsx can safely await it.
   restoreSession: async () => {
     const token = localStorage.getItem(TOKEN_STORAGE_KEY);
     if (!token) {
@@ -182,8 +224,24 @@ const useChatStore = create((set, get) => ({
       return;
     }
     try {
-      const res = await client.get('/api/auth/me');
-      set({ user: res.data.user, authReady: true, selectedModel: DEFAULT_IDENTIFIED_MODEL });
+      const res  = await client.get('/api/auth/me');
+      const user = res.data.user;
+
+      // Re-apply the user's saved appearance before React renders anything,
+      // so there's no flash of the default theme.
+      if (user.appearance && Object.keys(user.appearance).length > 0) {
+        applyAppearanceToDom(user.appearance);
+        set({
+          user,
+          authReady:     true,
+          selectedModel: DEFAULT_IDENTIFIED_MODEL,
+          theme:         user.appearance.theme       || 'dark',
+          bgPaletteId:   user.appearance.bgPaletteId || 'bgOceanic',
+          accentColor:   user.appearance.accentColor || get().accentColor,
+        });
+      } else {
+        set({ user, authReady: true, selectedModel: DEFAULT_IDENTIFIED_MODEL });
+      }
     } catch (err) {
       localStorage.removeItem(TOKEN_STORAGE_KEY);
       set({ user: null, authReady: true });
@@ -193,22 +251,30 @@ const useChatStore = create((set, get) => ({
   login: async (code) => {
     set({ authError: null });
     try {
-      const res = await client.post('/api/auth/login', { code });
+      const res          = await client.post('/api/auth/login', { code });
       const { token, user } = res.data;
       localStorage.setItem(TOKEN_STORAGE_KEY, token);
-      // Crossing the anonymous → identified boundary mid-chat: any
-      // in-progress anonymous session was never persisted (and its
-      // placeholder ID isn't a real conversation the backend knows about),
-      // so start clean rather than carrying over a session that the next
-      // send would just 404 on.
+
+      // Apply the user's saved appearance immediately on login.
+      if (user.appearance && Object.keys(user.appearance).length > 0) {
+        applyAppearanceToDom(user.appearance);
+      }
+
       set({
         user,
-        authError: null,
-        selectedModel: DEFAULT_IDENTIFIED_MODEL,
+        authError:            null,
+        selectedModel:        DEFAULT_IDENTIFIED_MODEL,
         activeConversationId: null,
-        messages: [],
-        view: 'home'
+        messages:             [],
+        view:                 'home',
+        // Sync appearance state so the panel reflects the restored values.
+        ...(user.appearance && Object.keys(user.appearance).length > 0 ? {
+          theme:       user.appearance.theme       || 'dark',
+          bgPaletteId: user.appearance.bgPaletteId || 'bgOceanic',
+          accentColor: user.appearance.accentColor || get().accentColor,
+        } : {})
       });
+
       await get().fetchConversations();
       return true;
     } catch (err) {
@@ -222,22 +288,20 @@ const useChatStore = create((set, get) => ({
     try {
       await client.post('/api/auth/logout');
     } catch (err) {
-      // Best-effort — the local session is cleared below regardless, so an
-      // unreachable backend doesn't trap the user in a "logged in" state.
       console.warn('Logout request failed (clearing local session anyway):', err.message);
     }
     localStorage.removeItem(TOKEN_STORAGE_KEY);
     set({
-      user: null,
-      conversations: [],
+      user:                 null,
+      conversations:        [],
       activeConversationId: null,
-      messages: [],
-      view: 'home',
-      selectedModel: ANONYMOUS_MODEL_ID
+      messages:             [],
+      view:                 'home',
+      selectedModel:        ANONYMOUS_MODEL_ID,
     });
   },
 
-  // --- API actions
+  // ── Conversation API ─────────────────────────────────────────────────────────
   fetchConversations: async () => {
     try {
       const res = await client.get('/api/history');
@@ -258,11 +322,8 @@ const useChatStore = create((set, get) => ({
     try {
       const res = await client.get(`/api/history/${id}`);
       set({ messages: res.data });
-
       const conv = get().conversations.find(c => (c._id || c.id) === id);
-      if (conv && conv.model) {
-        set({ selectedModel: conv.model });
-      }
+      if (conv?.model) set({ selectedModel: conv.model });
     } catch (err) {
       console.error('Fetch messages failed:', err);
       set({ error: 'Failed to load messages.' });
@@ -272,14 +333,14 @@ const useChatStore = create((set, get) => ({
   createConversation: async (title = 'New Chat', preferredModel = null) => {
     const model = preferredModel || get().selectedModel;
     try {
-      const res = await client.post('/api/history/new', { title, model });
+      const res    = await client.post('/api/history/new', { title, model });
       const newConv = res.data;
       set(state => ({
-        conversations: [newConv, ...state.conversations],
+        conversations:        [newConv, ...state.conversations],
         activeConversationId: newConv._id || newConv.id,
-        messages: [],
-        view: 'chat',
-        error: null
+        messages:             [],
+        view:                 'chat',
+        error:                null,
       }));
       return newConv;
     } catch (err) {
@@ -291,34 +352,28 @@ const useChatStore = create((set, get) => ({
   deleteConversation: async (id) => {
     try {
       await client.delete(`/api/history/${id}`);
-
-      // FIX: was `set(state => { conversations: ... })` — curly braces make a JS block,
-      // not an object literal, so state never updated. Parentheses around {} are required.
       set(state => {
-        const remaining = state.conversations.filter(c => (c._id || c.id) !== id);
-        const wasActive = state.activeConversationId === id;
+        const remaining  = state.conversations.filter(c => (c._id || c.id) !== id);
+        const wasActive  = state.activeConversationId === id;
         const newActiveId = wasActive
           ? (remaining[0]?._id || remaining[0]?.id || null)
           : state.activeConversationId;
         return {
-          conversations: remaining,
+          conversations:        remaining,
           activeConversationId: newActiveId,
-          messages: wasActive ? [] : state.messages,
-          view: wasActive && !newActiveId ? 'home' : state.view
+          messages:             wasActive ? [] : state.messages,
+          view:                 wasActive && !newActiveId ? 'home' : state.view,
         };
       });
-
-      // If a new conversation is now active, load its messages
       const newActiveId = get().activeConversationId;
-      if (newActiveId) {
-        get().selectConversation(newActiveId);
-      }
+      if (newActiveId) get().selectConversation(newActiveId);
     } catch (err) {
       console.error('Delete conversation failed:', err);
       set({ error: 'Failed to delete conversation.' });
     }
   },
 
+  // ── Send message ─────────────────────────────────────────────────────────────
   sendMessage: async (content) => {
     if (!content || content.trim().length === 0) return;
     const { user, searchEnabled: search } = get();
@@ -327,18 +382,13 @@ const useChatStore = create((set, get) => ({
     set({ isLoading: true, error: null, view: 'chat' });
 
     const tempUserMsg = {
-      _id: 'temp_user_' + Date.now(),
-      role: 'user',
+      _id:       'temp_user_' + Date.now(),
+      role:      'user',
       content,
-      createdAt: new Date()
+      createdAt: new Date(),
     };
 
-    // ── ANONYMOUS PATH ──────────────────────────────────────────────────
-    // Access plan §1: anonymous chats are never written to the database.
-    // There's no conversationId from the backend to anchor this on, so we
-    // track it with a local-only placeholder ID just to flip the UI out of
-    // the home screen, and resend the running history with every request
-    // since the server remembers nothing between calls.
+    // ── ANONYMOUS PATH ────────────────────────────────────────────────────────
     if (!user) {
       if (!get().activeConversationId) {
         set({ activeConversationId: 'anonymous-session', messages: [] });
@@ -350,42 +400,51 @@ const useChatStore = create((set, get) => ({
           .filter(m => m._id !== tempUserMsg._id)
           .map(m => ({ role: m.role, content: m.content }));
 
+        const tz  = Intl.DateTimeFormat().resolvedOptions().timeZone;
+        const ldt = new Date().toLocaleString('en-US', {
+          timeZone: tz, weekday: 'long', year: 'numeric',
+          month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: true,
+        });
+
         const res = await client.post('/api/chat', {
-          userMessage: content,
-          messages: priorHistory,
-          searchEnabled: search
+          userMessage:   content,
+          messages:      priorHistory,
+          searchEnabled: search,
+          timezone:      tz,
+          localDateTime: ldt,
         });
         const { reply, modelUsed } = res.data;
 
         set(state => {
-          const clean = state.messages.filter(m => m._id !== tempUserMsg._id);
+          const clean     = state.messages.filter(m => m._id !== tempUserMsg._id);
           const estTokens = Math.ceil((content.length + (reply?.length || 0)) / 4);
           return {
             messages: [
               ...clean,
               { _id: 'user_' + Date.now(), role: 'user', content, createdAt: new Date() },
-              { _id: 'ai_' + Date.now(), role: 'assistant', content: reply, modelUsed, createdAt: new Date() }
+              { _id: 'ai_'  + Date.now(), role: 'assistant', content: reply, modelUsed, createdAt: new Date() },
             ],
-            isLoading: false,
-            tokensToday: state.tokensToday + estTokens
+            isLoading:   false,
+            tokensToday: state.tokensToday + estTokens,
           };
         });
       } catch (err) {
         console.error('Send message failed:', err);
         const errData = err.response?.data;
-        const errMsg = errData?.suspended ? "Your access has been temporarily suspended. Please contact the admin." : errData?.error || "Failed to send message. Please try again.";
+        const errMsg  = errData?.suspended
+          ? 'Your access has been temporarily suspended. Please contact the admin.'
+          : errData?.error || 'Failed to send message. Please try again.';
         set({ isLoading: false, error: errMsg });
         get().setToast({ text: errMsg, type: 'error' });
       }
       return;
     }
 
-    // ── IDENTIFIED PATH ─────────────────────────────────────────────────
-    // Full DB-backed persistence, scoped to the logged-in user's account.
+    // ── IDENTIFIED PATH ───────────────────────────────────────────────────────
     let convId = get().activeConversationId;
 
     if (!convId) {
-      const title = content.length > 40 ? content.substring(0, 40) + '…' : content;
+      const title  = content.length > 40 ? content.substring(0, 40) + '…' : content;
       const newConv = await get().createConversation(title, model);
       if (!newConv) return;
       convId = newConv._id || newConv.id;
@@ -394,34 +453,40 @@ const useChatStore = create((set, get) => ({
     set(state => ({ messages: [...state.messages, tempUserMsg] }));
 
     try {
+      const tz  = Intl.DateTimeFormat().resolvedOptions().timeZone;
+      const ldt = new Date().toLocaleString('en-US', {
+        timeZone: tz, weekday: 'long', year: 'numeric',
+        month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: true,
+      });
       const res = await client.post('/api/chat', {
         conversationId: convId,
-        userMessage: content,
+        userMessage:    content,
         preferredModel: model,
-        searchEnabled: search
+        searchEnabled:  search,
+        timezone:       tz,
+        localDateTime:  ldt,
       });
+
       const { reply, modelUsed, message } = res.data;
 
       set(state => {
-        const clean = state.messages.filter(m => !m._id.startsWith('temp_user_'));
-        // Rough client-side token estimate (chars / 4) since the backend
-        // doesn't report real usage — purely a display approximation.
+        const clean     = state.messages.filter(m => !m._id.startsWith('temp_user_'));
         const estTokens = Math.ceil((content.length + (reply?.length || 0)) / 4);
         return {
           messages: [
             ...clean,
             { _id: 'real_user_' + Date.now(), role: 'user', content, createdAt: new Date() },
-            message
+            message,
           ],
-          isLoading: false,
-          tokensToday: state.tokensToday + estTokens
+          isLoading:   false,
+          tokensToday: state.tokensToday + estTokens,
         };
       });
 
       if (modelUsed !== model) {
         get().setToast({
           text: `Auto-switched: ${model} → ${modelUsed} (rate limit) — continuing seamlessly.`,
-          type: 'info'
+          type: 'info',
         });
         set({ selectedModel: modelUsed });
       }
@@ -430,11 +495,13 @@ const useChatStore = create((set, get) => ({
     } catch (err) {
       console.error('Send message failed:', err);
       const errData = err.response?.data;
-        const errMsg = errData?.suspended ? "Your access has been temporarily suspended. Please contact the admin." : errData?.error || "Failed to send message. Please try again.";
+      const errMsg  = errData?.suspended
+        ? 'Your access has been temporarily suspended. Please contact the admin.'
+        : errData?.error || 'Failed to send message. Please try again.';
       set({ isLoading: false, error: errMsg });
       get().setToast({ text: errMsg, type: 'error' });
     }
-  }
+  },
 }));
 
 export default useChatStore;
