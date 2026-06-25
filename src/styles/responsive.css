@@ -2,6 +2,7 @@
    RESPONSIVE
    ═══════════════════════════════════════════════════ */
 
+/* ─ Tablet ──────────────────────────────────────────── */
 @media (max-width: 720px) {
   :root { --sw: 220px; }
   .home-greeting { font-size: 22px; }
@@ -14,9 +15,52 @@
   .st-btn { padding: 4px 7px; font-size: 11px; }
 }
 
+/* ─ Mobile ──────────────────────────────────────────── */
 @media (max-width: 520px) {
   :root { --sw: 0px; }
-  .sidebar { display: none; }
+
+  /* Sidebar becomes a slide-in fixed overlay.
+     The desktop collapse trick (width → 0) is overridden here.
+     .closed = off-screen left, no class = visible. */
+  .sidebar {
+    position: fixed !important;
+    top: 0;
+    left: 0;
+    width: 280px !important;
+    min-width: 280px !important;
+    height: 100dvh;      /* dvh = no URL-bar jump on iOS */
+    z-index: 200;
+    transform: translateX(-100%);
+    transition: transform 0.26s cubic-bezier(.4,0,.2,1),
+                box-shadow 0.26s ease;
+    box-shadow: none;
+    border-right: 1px solid var(--bd);
+  }
+
+  /* Open state — sidebar slides in from the left */
+  .sidebar:not(.closed) {
+    transform: translateX(0);
+    box-shadow: 6px 0 32px rgba(0, 0, 0, 0.45);
+  }
+
+  /* Backdrop — rendered as a React sibling, sits behind the sidebar */
+  .sidebar-backdrop {
+    display: block;
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.52);
+    backdrop-filter: blur(2px);
+    -webkit-backdrop-filter: blur(2px);
+    z-index: 199;
+    animation: fadeIn 200ms ease;
+  }
+
+  /* Main area fills full width since sidebar is overlaid */
+  .main { width: 100vw; }
+
+  /* Hamburger is always visible on mobile */
+  .hdr .ibtn:first-child { display: flex !important; }
+
   .home-inner { max-width: 100%; }
   .hdr { padding: 0 8px; gap: 4px; }
   .mp-drop { width: calc(100vw - 24px); left: 0; right: auto; }
@@ -24,3 +68,6 @@
   .hdr-chat-right .st-btn { font-size: 0; gap: 0; padding: 5px 7px; }
   .hdr-chat-right .st-btn .st-d { font-size: 0; }
 }
+
+/* Desktop: backdrop never shows */
+.sidebar-backdrop { display: none; }
